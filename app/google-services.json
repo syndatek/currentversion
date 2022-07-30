@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "7770627481",
+    "firebase_url": "https://carditek-ecg.firebaseio.com",
+    "project_id": "carditek-ecg",
+    "storage_bucket": "carditek-ecg.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7770627481:android:350f5ea50c2b64d1260708",
+        "android_client_info": {
+          "package_name": "com.carditek.kesar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "7770627481-b594jhkctdj15v1ke1s5t7os42cfapjv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.carditek.kesar",
+            "certificate_hash": "8397b1b671303e4a86e544e5e4aa226558128ba4"
+          }
+        },
+        {
+          "client_id": "7770627481-47frhugeolh145h0muivrnglfsmvqgrs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoNsKOpo--44Es6y-guUwBz05v0680osg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "7770627481-47frhugeolh145h0muivrnglfsmvqgrs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

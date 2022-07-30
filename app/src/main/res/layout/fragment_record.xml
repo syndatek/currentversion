@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="patient"
+            type="com.carditek.kesar.module.Patient" />
+        <variable
+            name="device"
+            type="com.carditek.kesar.Device" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/frameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".RecordFragment">
+
+        <TextView
+            android:id="@+id/patient_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="72dp"
+            android:autofillHints="phoneNumber"
+            android:hint="@string/patient_name"
+            android:text="@{patient.name}"
+            android:textAlignment="center"
+            android:textSize="24sp"
+            android:singleLine="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/patient_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints="phoneNumber"
+            android:hint="@string/phone_number"
+            android:text="@{patient.phone}"
+            android:textAlignment="center"
+            android:textSize="18sp"
+            app:layout_constraintBottom_toTopOf="@+id/record_or_stop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/patient_name"
+            app:layout_constraintVertical_bias="0.065" />
+
+        <com.google.android.material.button.MaterialButton
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:id="@+id/record_or_stop"
+            android:layout_width="240dp"
+            android:layout_height="50dp"
+            android:text="@{device.recording ? @string/stop_recording : @string/start_recording}"
+            app:icon="@{device.recording ? @drawable/stop : @drawable/fiber_manual_record}"
+            app:iconGravity="textStart"
+            android:enabled="@{!patient.empty}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.855" />
+
+        <Button
+            android:id="@+id/select_or_clear_patient"
+            android:layout_width="240dp"
+            android:layout_height="50dp"
+            android:text="@{patient.empty ? @string/select_patient : @string/clear_patient}"
+            android:enabled="@{!device.recording}"
+            app:layout_constraintBottom_toTopOf="@+id/record_or_stop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.501"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/patient_phone"
+            app:layout_constraintVertical_bias="0.111" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

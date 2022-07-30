@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="device"
+            type="com.carditek.kesar.Device" />
+    </data>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".LiveFragment">
+
+        <WebView
+            android:id="@+id/live_webview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_record"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/fab_margin"
+            android:backgroundTint="@{device.recording ? @color/fab_stop : @color/fab_record}"
+            android:contentDescription="@string/send_email"
+            android:scaleType="center"
+            android:src="@{device.recording ? @drawable/stop : @drawable/fiber_manual_record}"
+            app:fabSize="mini" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_add_note"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="72dp"
+            android:backgroundTint="@color/design_default_color_secondary"
+            android:contentDescription="@string/send_email"
+            android:scaleType="center"
+            android:src="@drawable/add_note"
+            app:fabSize="mini" />
+    </FrameLayout>
+</layout>

@@ -7,6 +7,7 @@ import android.os.Process
 import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
+
 class Connection(
     context: Context,
     val address: String,

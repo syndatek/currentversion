@@ -31,6 +31,21 @@
             android:scaleType="center"
             android:src="@{device.recording ? @drawable/stop : @drawable/fiber_manual_record}"
             app:fabSize="mini" />
+<!--        star added 16 juy-->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStop"
+            android:layout_width="54dp"
+            android:layout_height="50dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="130dp"
+            android:backgroundTint="@android:color/holo_red_dark"
+            android:text="S"
+            android:textColor="@android:color/white"
+            app:cornerRadius="30dp"
+            android:layout_marginEnd="16dp"
+            app:fabSize="mini" />
+<!--       till  added 16 -->
+
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_add_note"
@@ -45,4 +60,5 @@
             android:src="@drawable/add_note"
             app:fabSize="mini" />
     </FrameLayout>
+
 </layout>

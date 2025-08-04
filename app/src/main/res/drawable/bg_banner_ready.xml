@@ -1,0 +1,10 @@
+<!-- res/drawable/bg_banner_ready.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Solid green fill (Material 500 tone) -->
+    <solid android:color="#4CAF50"/>
+
+    <!-- Rounded corners -->
+    <corners android:radius="12dp"/>
+</shape>

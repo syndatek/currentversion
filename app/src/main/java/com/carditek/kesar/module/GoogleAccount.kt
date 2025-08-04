@@ -78,7 +78,7 @@ class GoogleAccount(private val application: Context) : Account {
             google.displayName?.let { _name.postValue(it) }
             google.email?.let {
                 _email.postValue(it)
-                Log.i(TAG, "Logged in: ${_name.value} <$it>")
+                Log.i(TAG, "--------------------Logged in: ${_name.value} <$it>")
                 firebase.setCustomKey("E-MAIL", it)
             }
             google.photoUrl?.let { _photo.postValue(it) }
@@ -97,11 +97,12 @@ class GoogleAccount(private val application: Context) : Account {
         .requestIdToken(OAUTH_CLIENT_ID)
         .requestEmail()
         .build()
-
     companion object {
         private val firebase = FirebaseCrashlytics.getInstance()
         private const val OAUTH_CLIENT_ID =
             "7770627481-6215hqbpcg9hm1lku8ni32pod4fngnoa.apps.googleusercontent.com"
+            //"661728900475-228rakg81k48a98pmsgqvk2dfrjd3bc6.apps.googleusercontent.com"
+        //http://661728900475-228rakg81k48a98pmsgqvk2dfrjd3bc6.apps.googleusercontent.com  orignal
         private const val TAG = "Account"
     }
 }

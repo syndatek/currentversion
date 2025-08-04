@@ -56,19 +56,34 @@ class Uploader @Inject constructor(
                     state.stats.cloud.pending = chunks.count()
                     val result = "${chunk.address}/${chunk.stamp}/${chunk.leads}/${chunk.frequency}"
                     Log.i(TAG, "Uploaded chunk: $address/$stamp")
+                    Log.d(TAG, "trying to upload-------------------------------")
+                    Log.d(TAG, "one-------------------------------")
                     Result.success(workDataOf(KEY_RESULT to result))
                 } catch (e: CloudBackend.HttpException) {
                     if (e.code == 401) {
                         // Permissions failure.  Perhaps token expired?
                         account.refresh()
+                        Log.d(TAG, "RE---401 error_1-------------------------------")
+                        Log.d(TAG, "Two-------------------------------")
+
                     }
+                   // account.refresh()
                     Log.e(TAG, "Got exception (code: ${e.code}", e)
                     firebase.recordException(e)
+                    Log.d(TAG, "RE---trying to upload with account refrest-------------------------------")
+                    Log.d(TAG, "three-------------------------------")
                     Result.retry()
+
                 } catch (e: Exception) {
                     Log.e(TAG, "Got exception", e)
+                    Log.d(TAG, "RE---got eception without any exepectancy-------------------------------")
+                    Log.d(TAG, "four-------------------------------")
                     firebase.recordException(e)
                     Result.retry()
+                } finally {
+                    // This block is always executed, regardless of whether an exception occurred
+                    println("Finally block executed")
+                    Log.d(TAG, "five-------------------------------")
                 }
             }
         }
@@ -92,20 +107,29 @@ class Uploader @Inject constructor(
                 if (e.code == 401) {
                     // Permissions failure.  Perhaps token expired?
                     account.refresh()
+                    Log.d(TAG, "six-------------------------------")
                 } else if (e.code != 404) {
                     // We get a 404 when the note was attempted to be saved before there was
                     // an available chunk to store it against.  That's expected, don't log.
                     Log.e(TAG, "Got exception (code: ${e.code}", e)
                     firebase.recordException(e)
+                    Log.d(TAG, "seven-------------------------------")
                 }
                 Result.retry()
             } catch (e: Exception) {
                 Log.e(TAG, "Got exception", e)
                 firebase.recordException(e)
+                Log.d(TAG, "eigth-------------------------------")
                 Result.retry()
+
+            }finally {
+                // This block is always executed, regardless of whether an exception occurred
+                Log.d(TAG, "nine-------------------------------")
+                println("Finally  noteblock executed")
             }
         }
     }
+
 
     // TODO(vjn): the device and/or patient could have changed, we're looking at live data.
     suspend fun upload(stamp: Int, leads: Int, frequency: Int, data: ByteArray): UUID {
@@ -120,7 +144,7 @@ class Uploader @Inject constructor(
             patientPhone = patient.phone.value!!,
             data = data
         )
-
+        Log.d(Uploader.TAG, "enetery for upload tag-------------------------------")
         chunks.insert(chunk)
         state.stats.cloud.pending = chunks.count()
         val request = OneTimeWorkRequestBuilder<ChunkWorker>()
@@ -175,6 +199,8 @@ object UploaderModule {
         chunks: ChunkDao,
         state: State
     ): Uploader {
+
+
         return Uploader(context, account, device, patient, chunks, state)
     }
 }

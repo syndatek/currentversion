@@ -8,4 +8,6 @@ interface Device {
 
     fun setAddress(address: String) {}
     fun setRecording(recording: Boolean) {}
-}
+
+    // ✅ Add this:
+    fun disconnect() {}}

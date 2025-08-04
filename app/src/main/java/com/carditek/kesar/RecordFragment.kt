@@ -105,3 +105,6 @@ class RecordFragment : Fragment() {
         private const val REQUEST_CONTACT = 1001
     }
 }
+
+
+

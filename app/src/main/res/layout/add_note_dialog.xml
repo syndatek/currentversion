@@ -1,52 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:padding="16dp">
 
-    <EditText
-        android:id="@+id/notes"
-        android:autofillHints=""
-        android:focusedByDefault="true"
-        android:gravity="top"
-        android:inputType="textAutoCorrect|textMultiLine"
-        android:layout_height="200dp"
-        android:layout_marginBottom="20dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
-        android:layout_width="300dp"
-        app:flow_wrapMode="aligned"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/add_text_label"
-        app:layout_constraintVertical_bias="0.028"
-        tools:ignore="LabelFor"
-        tools:targetApi="o" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <TextView
-        android:id="@+id/add_text_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:text="@string/add_note"
-        android:textStyle="bold"
-        android:textSize="20sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <TextView
+            android:id="@+id/add_text_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add Note / History"
+            android:textStyle="bold"
+            android:textSize="18sp" />
 
-    <Button
-        android:id="@+id/save_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="24dp"
-        android:text="@string/save"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/notes" />
+        <!-- Custom note input -->
+        <EditText
+            android:id="@+id/notes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter additional note..."
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Predefined options -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Medical History:"
+            android:layout_marginTop="16dp" />
+        <CheckBox android:id="@+id/option_PostEcg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Post Ecg"/>
+        <CheckBox android:id="@+id/option_Thyroid" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Thyroid"/>
+
+        <CheckBox android:id="@+id/option_Hypertension" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hypertension"/>
+        <CheckBox android:id="@+id/option_DiabetesMellitu" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Diabetes Mellitu"/>
+        <CheckBox android:id="@+id/option_HeartAttack" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Heart Attack"/>
+        <CheckBox android:id="@+id/option_Palpitations" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Palpitations"/>
+        <CheckBox android:id="@+id/option_ChestPain" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Chest Pain"/>
+        <CheckBox android:id="@+id/option_HistoryofStroke" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="History of Stroke"/>
+        <CheckBox android:id="@+id/option_CoronaryStent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Coronary Stent"/>
+        <CheckBox android:id="@+id/option_BypassSurgery" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bypass Surgery"/>
+        <CheckBox android:id="@+id/option_LegSwelling" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Leg Swelling"/>
+        <CheckBox android:id="@+id/option_generalcheckup" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="General Checkup"/>
+        <CheckBox android:id="@+id/option_BreathingProblems" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breathing Problems"/>
+        <CheckBox android:id="@+id/option_Allergy" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Allergy"/>
+        <CheckBox android:id="@+id/option_Holter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Holter"/>
+
+
+        <!-- Save button -->
+        <Button
+            android:id="@+id/save_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Save" />
+
+    </LinearLayout>
+</ScrollView>

@@ -25,4 +25,12 @@
     <string name="select_patient">Select Patient</string>
     <string name="add_note">Add Note</string>
     <string name="save">Save</string>
+
+    <string name="ready_to_go">Ready to Go</string>
+    <string name="clear_cache">Clear Cache</string>
+    <!-- Added for Android Logo Content Description -->
+    <string name="android_logo_description">Android Logo</string>
+
+
+
 </resources>

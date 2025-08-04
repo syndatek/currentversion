@@ -1,5 +1,4 @@
 package com.carditek.kesar.bluetooth
-
 import android.os.SystemClock
 import android.util.Log
 import com.carditek.kesar.Cache
@@ -7,26 +6,31 @@ import com.carditek.kesar.cloud.Uploader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class DataHandler(
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+
+
+class DataHandler @Inject constructor(
     private val uploader: Uploader,
     private val cache: Cache,
-    state: State
-) {
+    private val state: State
+)  {
+    // LiveData for battery percentage
+    private val _batteryPercentage = MutableLiveData<Int>().apply{value=100}
+    val batteryPercentage: LiveData<Int> get() = _batteryPercentage
+
     private val packets = state.stats.packets
     private val bytes = state.stats.bytes
 
-    // We save the base upon initialization (new/re- connection); all subsequent calculations
-    // use the monotonically increasing "elapsed" system clock (milliseconds since boot).
+    // Initialize the timebase, next, buffer, etc.
     private val timebase = System.currentTimeMillis() - SystemClock.elapsedRealtime()
-
-    // Session (connection) variables: serial numbers increment by 1, wrapping around in 16 bits.
-    private var next: Int = 0    // next expected serial number
-
-    // Fields describing the next timestamped buffer (chunk) to be sent to the cloud backend.
+    private var next: Int = 0
     private var buffer: ByteArray = ByteArray(BUFFER_SIZE)
-    private var serial: Int = 0  // serial number at start of buffer
+    private var serial: Int = 0
     private var timestamp: Int = 0
-
+    private var extractedBytes: ByteArray? = null
     var recording: Boolean = false
         set(value) {
             field = value
@@ -34,6 +38,7 @@ class DataHandler(
         }
 
     fun handle(packet: ByteArray) {
+        // Update stats, handle packets, etc.
         ++packets.total
         bytes.total += packet.size
 
@@ -43,6 +48,7 @@ class DataHandler(
             return
         }
 
+        // Process the serial numbers, reinitializing buffer if necessary
         val actual = Protocol.serial(packet)
         if (actual != next) {
             Log.w(TAG, "Got $actual, expected $serial")
@@ -50,18 +56,12 @@ class DataHandler(
             next = actual
         }
 
-        // Serial numbers should increase by 1 each time, wrapping around in 16 bits.
         next = (next + 1) and 0xffff
 
-        // An arbitrary amount of time could have elapsed before we got this packet.  Therefore,
-        // it is necessary to use wall-clock time for each packet.  We can expect the clock call
-        // to take no more than 1us, so this is acceptable.
         val now = timebase + SystemClock.elapsedRealtime()
         val seconds = now / 1000
         val stamp = (seconds - (seconds % BUFFER_SECONDS)).toInt()
 
-        // Are we clearly into the next chunk timestamp?  If yes, reinitialize as needed.  Note
-        // that this path is also taken when we start this handler with a new patch connection.
         if (seconds > timestamp + BUFFER_SECONDS + BUFFER_SECONDS / 3) {
             Log.w(TAG, "Reinitializing from $timestamp to $stamp.")
             val packets = BUFFER_PACKETS * (seconds - stamp).toInt() / BUFFER_SECONDS
@@ -71,17 +71,14 @@ class DataHandler(
             timestamp = stamp
         }
 
-        // How many packets have been accumulated in the current buffer?  Enough for a full buffer?
         var difference = (actual - serial) and 0xffff
         if (difference >= BUFFER_PACKETS) {
-            // We've accumulated a full buffer's worth of data.  Flush it, and start the next.
             flush()
             timestamp += BUFFER_SECONDS
             difference = 0
             serial = actual
         }
 
-        // Where within the buffer should we write the packet just received from the patch?
         val offset = difference * PAYLOAD_BYTES
         packet.copyInto(buffer, offset, 4, 4 + PAYLOAD_BYTES)
         if ((difference + 1) % PACKETS_PER_SECOND == 0) {
@@ -92,6 +89,31 @@ class DataHandler(
                             until offset + PAYLOAD_BYTES
                 )
             )
+        }
+
+        // Extract the first 4 bytes of the packet and store them
+        extractedBytes = packet.copyOfRange(4, 8)
+
+        // Calculate battery percentage based on the extracted bytes
+        extractedBytes?.let {
+            val adcValue = 0x190F // Placeholder for actual ADC value
+
+            val maxAdcValue = 0x190F  // Corresponding to 100% (4.12V)
+            val minAdcValue = 0x0B00  // Corresponding to 10% (3.50V)
+            //_batteryPercentage.postValue(255)
+
+            val batteryPercentage = when {
+                adcValue >= maxAdcValue -> 100
+                adcValue <= minAdcValue -> 10
+                else -> ((adcValue - minAdcValue).toFloat() / (maxAdcValue - minAdcValue) * 90 + 10).toInt()
+            }
+            // Debug: Print the calculated battery percentage and ADC value to the console
+            Log.d(TAG, "Calculated battery percentage: $batteryPercentage, ADC value: $adcValue")
+
+
+            // Post the calculated battery percentage to LiveData
+           // batteryPercentage=100
+            _batteryPercentage.postValue(batteryPercentage)
         }
     }
 
@@ -106,19 +128,14 @@ class DataHandler(
         }
     }
 
-    // Will be launching a coroutine, so capture variables of interest as parameters.
     private fun store(buffer: ByteArray, stamp: Int) {
         GlobalScope.launch {
             uploader.upload(stamp, LEADS, FREQUENCY, buffer)
+
         }
     }
 
     companion object {
-        // TODO(vjn): make more flexible.
-        //
-        // Currently, we support only 8 leads, 1000 Hz.  That works out to 24 bytes per sample.  10
-        // samples in a packet.  The first four bytes of the packet are a serial number.  There are
-        // 100 packets/second.  The buffer holds 15 seconds worth of data.
         private const val LEADS = 8
         private const val FREQUENCY = 1000
         private const val SAMPLE_BYTES = 3 * LEADS
@@ -134,6 +151,9 @@ class DataHandler(
         private const val BUFFER_SIZE = PAYLOAD_BYTES * 100 * BUFFER_SECONDS
         private const val BUFFER_PACKETS = BUFFER_SIZE / PAYLOAD_BYTES
 
-        private const val TAG = "data"
+        private const val TAG = "DataHandler"
+
+
     }
 }
+

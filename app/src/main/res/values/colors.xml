@@ -5,4 +5,11 @@
     <color name="colorAccent">#03DAC5</color>
     <color name="fab_record">#C0C0C0</color>
     <color name="fab_stop">#F06292</color>
+    <color name="green">#4CAF50</color>
+    <color name="gray_light">#E0E0E0</color>
+    <color name="red">#F44336</color>
+    <color name="battery_fill">#FF9800</color>    <!-- Material Orange 500 -->
+    <color name="battery_track">#9C27B0</color>
+    <color name="white">#FFFFFF</color>
+
 </resources>

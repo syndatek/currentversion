@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.hilt_version = '2.39.1'
+    ext.hilt_version = '2.40.1'
     ext.kotlin_version = '1.5.21'
     ext.nav_version = '2.3.5'
     ext.room_version = '2.4.0'
@@ -13,11 +13,11 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.4'
+        classpath 'com.android.tools.build:gradle:7.4.2'
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
         classpath 'com.google.firebase:firebase-crashlytics-gradle:2.8.1'
         classpath 'com.google.gms:google-services:4.3.10'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31"
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.21'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -33,3 +33,41 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+
+//new code update
+
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+//buildscript {
+//    ext.hilt_version = '2.51'
+//    ext.kotlin_version = '1.9.24'
+//    ext.nav_version = '2.7.7'
+//    ext.room_version = '2.6.1'
+//    ext.work_version = '2.9.0'
+//
+//    repositories {
+//        google()
+//        mavenCentral()
+//    }
+//
+//    dependencies {
+//        classpath 'com.android.tools.build:gradle:8.11.1' // ✅ Latest AGP
+//        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+//        classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
+//        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
+//        classpath 'com.google.gms:google-services:4.4.1'
+//    }
+//}
+//
+//allprojects {
+//    repositories {
+//        google()
+//        mavenCentral()
+//    }
+//}
+//
+//task clean(type: Delete) {
+//    delete rootProject.buildDir
+//}
+//

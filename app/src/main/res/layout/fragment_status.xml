@@ -1,44 +1,103 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
-
         <variable
             name="state"
-            type="com.carditek.kesar.bluetooth.State" />
+            type="com.carditek.kesar.bluetooth.State"/>
     </data>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Keeps content visible on small screens -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".StatusFragment">
+        android:fillViewport="true">
 
-        <TextView
-            android:id="@+id/text_status"
-            android:layout_width="200dp"
-            android:layout_height="26dp"
-            android:background="#E1F5FE"
-            android:fontFamily="monospace"
-            android:text="@{state.state}"
-            android:textAlignment="center"
-            android:textSize="16sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/text_message"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.25" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingTop="24dp"
+            android:paddingBottom="24dp">
 
-        <TextView
-            android:id="@+id/text_message"
-            android:layout_width="200dp"
-            android:layout_height="300dp"
-            android:layout_marginTop="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_status">
+            <!-- Logo -->
+            <ImageView
+                android:id="@+id/image_logo"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                android:src="@drawable/android_logo"
+                android:contentDescription="@string/android_logo_description"/>
 
-        </TextView>
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- BLE state -->
+            <TextView
+                android:id="@+id/text_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="#E1F5FE"
+                android:fontFamily="monospace"
+                android:padding="6dp"
+                android:text="@{state.state}"
+                android:textAlignment="center"
+                android:textSize="16sp"/>
+
+            <!-- Packet / byte stats -->
+            <TextView
+                android:id="@+id/text_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:paddingStart="95dp"
+                android:paddingEnd="24dp"
+                android:textSize="12sp"/>
+
+            <!-- Ready‑to‑Go banner (initially hidden) -->
+            <TextView
+                android:id="@+id/text_ready_banner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_banner_ready"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:visibility="gone"/>
+
+            <!-- Start / Stop button -->
+            <Button
+                android:id="@+id/button_toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Start"/>
+
+            <!-- Battery percentage -->
+            <TextView
+                android:id="@+id/text_battery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="SYDANTEK LIPO BAT:0%"
+                android:textColor="#F44336"
+                android:textStyle="bold"/>
+
+            <!-- Battery progress bar -->
+            <ProgressBar
+                android:id="@+id/progress_battery"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:max="100"
+                android:progress="0"
+
+                android:progressDrawable="@drawable/custom_progress_bar"/>
+        </LinearLayout>
+    </ScrollView>
 </layout>

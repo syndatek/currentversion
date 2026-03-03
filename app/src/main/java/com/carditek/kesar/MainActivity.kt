@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var state: State
 
+    @Inject
+    lateinit var appCache: Cache
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -66,6 +69,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.nav_device_list -> {
                     BluetoothUtils(this, device).selectPatch()
+                }
+                R.id.nav_snr_saturation -> {
+                    showLeadSelectionDialog()
                 }
                 else -> {
                     NavigationUI.onNavDestinationSelected(it, navController)
@@ -116,6 +122,22 @@ class MainActivity : AppCompatActivity() {
         val headerBinding = NavHeaderMainBinding.inflate(layoutInflater, navigation, false)
         headerBinding.account = account
         navigation.addHeaderView(headerBinding.root)
+    }
+
+    private fun showLeadSelectionDialog() {
+        val currentSelectedLeads = appCache.getSelectedLeadsForSNRAndSaturation()
+        val dialog = com.carditek.kesar.util.filters.edgecomputing.LeadSelectionDialog(
+            initialSelectedLeads = currentSelectedLeads,
+            onLeadsSelected = { selectedLeads ->
+                appCache.setSelectedLeadsForSNRAndSaturation(selectedLeads)
+                android.widget.Toast.makeText(
+                    this,
+                    "SNR & Saturation calculation updated for ${selectedLeads.size} lead(s)",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
+        dialog.show(supportFragmentManager, "LeadSelectionDialog")
     }
 
     companion object {

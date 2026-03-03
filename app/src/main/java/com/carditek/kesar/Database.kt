@@ -103,9 +103,47 @@ interface ChunkDao {
     suspend fun delete(address: String, stamp: Int)
 }
 
-@Database(entities = [Chunk::class], version = 1)
+@Entity(tableName = "medical_note")
+data class MedicalNote(
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id") val id: Long = 0,
+    @ColumnInfo(name = "note_text") val noteText: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "uploaded") val uploaded: Boolean = false,
+    @ColumnInfo(name = "upload_timestamp") val uploadTimestamp: Long? = null
+)
+
+@Dao
+interface NoteDao {
+    @Query("SELECT * FROM medical_note ORDER BY created_at DESC LIMIT 1")
+    suspend fun getLatestNote(): MedicalNote?
+
+    @Query("SELECT * FROM medical_note WHERE uploaded = 0 ORDER BY created_at DESC LIMIT 1")
+    suspend fun getUnuploadedNote(): MedicalNote?
+
+    @Query("SELECT * FROM medical_note WHERE id = :id")
+    suspend fun getNoteById(id: Long): MedicalNote?
+
+    @Insert
+    suspend fun insert(note: MedicalNote): Long
+
+    @Query("UPDATE medical_note SET uploaded = 1, upload_timestamp = :timestamp WHERE id = :id")
+    suspend fun markAsUploaded(id: Long, timestamp: Long)
+
+    @Query("DELETE FROM medical_note WHERE id = :id")
+    suspend fun deleteNote(id: Long)
+
+    @Query("DELETE FROM medical_note WHERE uploaded = 1")
+    suspend fun deleteUploadedNotes()
+
+    @Query("DELETE FROM medical_note")
+    suspend fun clearAllNotes()
+}
+
+@Database(entities = [Chunk::class, MedicalNote::class], version = 3)
 abstract class ChunkDatabase : RoomDatabase() {
     abstract fun chunkDao(): ChunkDao
+    abstract fun noteDao(): NoteDao
 }
 
 @Module
@@ -114,11 +152,22 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideChunkDatabase(@ApplicationContext context: Context): ChunkDatabase {
-        return Room.databaseBuilder(context, ChunkDatabase::class.java, "Chunks").build()
+        return Room.databaseBuilder(context, ChunkDatabase::class.java, "Chunks")
+            .fallbackToDestructiveMigration() // For development - handles version upgrade
+            .build()
     }
 
     @Provides
     fun provideChunkDao(database: ChunkDatabase): ChunkDao {
         return database.chunkDao()
     }
+
+    @Provides
+    fun provideNoteDao(database: ChunkDatabase): NoteDao {
+        return database.noteDao()
+    }
 }
+
+
+
+

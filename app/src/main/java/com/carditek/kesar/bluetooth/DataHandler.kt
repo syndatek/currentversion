@@ -3,6 +3,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.carditek.kesar.Cache
 import com.carditek.kesar.cloud.Uploader
+import com.carditek.kesar.util.filters.edgecomputing.EdgeComputingProcessor
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -15,6 +16,7 @@ import javax.inject.Inject
 class DataHandler @Inject constructor(
     private val uploader: Uploader,
     private val cache: Cache,
+    private val edgeComputingProcessor: EdgeComputingProcessor,
     private val state: State
 )  {
     // LiveData for battery percentage
@@ -82,12 +84,22 @@ class DataHandler @Inject constructor(
         val offset = difference * PAYLOAD_BYTES
         packet.copyInto(buffer, offset, 4, 4 + PAYLOAD_BYTES)
         if ((difference + 1) % PACKETS_PER_SECOND == 0) {
+            // Extract 1 second of RAW data (24000 bytes @ 1000 Hz)
+            val rawData = buffer.sliceArray(
+                offset + PAYLOAD_BYTES - PAYLOAD_BYTES_PER_SECOND
+                        until offset + PAYLOAD_BYTES
+            )
+            
+            // Path 1: EDGE COMPUTING
+            // Process: Decimate → Filter → HR → SNR → Sat → LiveData (UI)
+            edgeComputingProcessor.processRawData(rawData)
+            
+            // Path 2: CACHE
+            // Process: Decimate → Store → (if recording) Upload RAW to Cloud
+            // Note: No filtering in cache path - RAW data is uploaded
             cache.put(
                 timestamp + difference / PACKETS_PER_SECOND,
-                buffer.sliceArray(
-                    offset + PAYLOAD_BYTES - PAYLOAD_BYTES_PER_SECOND
-                            until offset + PAYLOAD_BYTES
-                )
+                rawData
             )
         }
 
@@ -95,25 +107,79 @@ class DataHandler @Inject constructor(
         extractedBytes = packet.copyOfRange(4, 8)
 
         // Calculate battery percentage based on the extracted bytes
-        extractedBytes?.let {
-            val adcValue = 0x190F // Placeholder for actual ADC value
+//        extractedBytes?.let {
+//            val adcValue = 0x190F // Placeholder for actual ADC value
+//
+//            val maxAdcValue = 0x190F  // Corresponding to 100% (4.12V)
+//            val minAdcValue = 0x0B00  // Corresponding to 10% (3.50V)
+        extractedBytes?.let { bytes ->
+            // Convert 4 bytes to ADC value using little-endian format
+            val adcValue = (bytes[0].toInt() and 0xFF) or
+                    ((bytes[1].toInt() and 0xFF) shl 8) or
+                    ((bytes[2].toInt() and 0xFF) shl 16) or
+                    ((bytes[3].toInt() and 0xFF) shl 24)
 
-            val maxAdcValue = 0x190F  // Corresponding to 100% (4.12V)
-            val minAdcValue = 0x0B00  // Corresponding to 10% (3.50V)
+            // Log the received bytes for debugging
+            val hexString = bytes.joinToString(" ") { "%02X".format(it) }
+            Log.d(TAG, "Received battery bytes: [$hexString] -> ADC: 0x${adcValue.toString(16).uppercase()}")
+
+            // Actual ADC values from device measurements
+            val maxAdcValue = 0x190F  // 100% (4.12V)
+            val highAdcValue = 0x0E0B // 75% (3.85V)
+            val midAdcValue = 0x0DB7  // 50% (3.74V)
+            val minAdcValue = 0x0D07  // 10% (3.50V)
+
             //_batteryPercentage.postValue(255)
 
             val batteryPercentage = when {
                 adcValue >= maxAdcValue -> 100
-                adcValue <= minAdcValue -> 10
-                else -> ((adcValue - minAdcValue).toFloat() / (maxAdcValue - minAdcValue) * 90 + 10).toInt()
-            }
-            // Debug: Print the calculated battery percentage and ADC value to the console
-            Log.d(TAG, "Calculated battery percentage: $batteryPercentage, ADC value: $adcValue")
+//                adcValue <= minAdcValue -> 10
+//                else -> ((adcValue - minAdcValue).toFloat() / (maxAdcValue - minAdcValue) * 90 + 10).toInt()
+                adcValue >= highAdcValue -> {
+                    // Linear interpolation between 100% and 75%
+                    val ratio = (adcValue - highAdcValue).toFloat() / (maxAdcValue - highAdcValue)
+                    75 + (ratio * 25).toInt()
+                }
+                adcValue >= midAdcValue -> {
+                    // Linear interpolation between 75% and 50%
+                    val ratio = (adcValue - midAdcValue).toFloat() / (highAdcValue - midAdcValue)
+                    50 + (ratio * 25).toInt()
+                }
+                adcValue >= minAdcValue -> {
+                    // Linear interpolation between 50% and 10%
+                    val ratio = (adcValue - minAdcValue).toFloat() / (midAdcValue - minAdcValue)
+                    10 + (ratio * 40).toInt()
+                }
+                else -> 10
 
+            }
+            // Calculate voltage from ADC value using actual measurements
+            val batteryVoltage = when {
+                adcValue >= maxAdcValue -> 4.12f
+                adcValue >= highAdcValue -> {
+                    // Linear interpolation between 4.12V and 3.85V
+                    3.85f + (4.12f - 3.85f) * (adcValue - highAdcValue).toFloat() / (maxAdcValue - highAdcValue)
+                }
+                adcValue >= midAdcValue -> {
+                    // Linear interpolation between 3.85V and 3.74V
+                    3.74f + (3.85f - 3.74f) * (adcValue - midAdcValue).toFloat() / (highAdcValue - midAdcValue)
+                }
+                adcValue >= minAdcValue -> {
+                    // Linear interpolation between 3.74V and 3.50V
+                    3.50f + (3.74f - 3.50f) * (adcValue - minAdcValue).toFloat() / (midAdcValue - minAdcValue)
+                }
+                else -> 3.50f
+            }
+//            // Debug: Print the calculated battery percentage and ADC value to the console
+//            Log.d(TAG, "Calculated battery percentage: $batteryPercentage, ADC value: $adcValue")
+
+            // Debug: Print the calculated battery percentage and voltage
+            Log.d(TAG, "Battery: $batteryPercentage%, ${String.format("%.2f", batteryVoltage)}V, ADC: 0x${adcValue.toString(16).uppercase()}")
 
             // Post the calculated battery percentage to LiveData
            // batteryPercentage=100
             _batteryPercentage.postValue(batteryPercentage)
+
         }
     }
 

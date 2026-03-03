@@ -204,3 +204,4 @@ object UploaderModule {
         return Uploader(context, account, device, patient, chunks, state)
     }
 }
+

@@ -16,6 +16,15 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
 
+    <!-- permissions -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
+
+    <!-- inside <application> -->
+
+
+
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />

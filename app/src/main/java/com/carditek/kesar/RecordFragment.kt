@@ -12,9 +12,21 @@ import android.widget.Button
 import androidx.fragment.app.Fragment
 import com.carditek.kesar.databinding.FragmentRecordBinding
 import com.carditek.kesar.module.Patient
+import com.carditek.kesar.cloud.Uploader
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import androidx.appcompat.app.AlertDialog
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 
 @AndroidEntryPoint
 class RecordFragment : Fragment() {
@@ -23,6 +35,12 @@ class RecordFragment : Fragment() {
 
     @Inject
     lateinit var device: Device
+    
+    @Inject
+    lateinit var uploader: Uploader
+    
+    @Inject
+    lateinit var noteDao: NoteDao
 
     private val intent = Intent(
         Intent.ACTION_PICK,
@@ -38,6 +56,23 @@ class RecordFragment : Fragment() {
         binding.patient = patient
         binding.device = device
         val view = binding.root
+        
+        val medicalHistoryTextView = view.findViewById<TextView>(R.id.medical_history_text)
+
+        // Load and display saved medical history (only unuploaded notes)
+        lifecycleScope.launch {
+            try {
+                val savedNoteData = noteDao.getUnuploadedNote()
+                if (savedNoteData != null && !savedNoteData.noteText.isNullOrEmpty()) {
+                    medicalHistoryTextView.text = "Medical History: ${savedNoteData.noteText.take(50)}${if (savedNoteData.noteText.length > 50) "..." else ""}"
+                    medicalHistoryTextView.visibility = View.VISIBLE
+                } else {
+                    medicalHistoryTextView.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                medicalHistoryTextView.visibility = View.GONE
+            }
+        }
 
         view.findViewById<Button>(R.id.select_or_clear_patient).apply {
             setOnClickListener {
@@ -47,8 +82,65 @@ class RecordFragment : Fragment() {
                     patient.clear()
             }
         }
+        
+        view.findViewById<Button>(R.id.add_note_button).setOnClickListener {
+            val dialog = AddNoteDialog()
+            activity?.supportFragmentManager?.let {
+                dialog.show(it, "Add Note")
+            }
+        }
+        
+        // Refresh medical history when fragment resumes (after dialog is dismissed)
+        viewLifecycleOwner.lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+            override fun onResume(owner: androidx.lifecycle.LifecycleOwner) {
+                refreshMedicalHistory(medicalHistoryTextView)
+            }
+        })
+        
         view.findViewById<Button>(R.id.record_or_stop).setOnClickListener {
-            device.setRecording(!device.recording.value!!)
+            val isRecording = device.recording.value == true
+            if (!isRecording) {
+                if (device.firstTimestamp == null) {
+                    device.firstTimestamp = ((System.currentTimeMillis() / 15000) * 15).toInt()
+                }
+                // Upload saved medical history from database (stored procedure) if exists
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val savedNoteData = AddNoteDialog.getSavedNoteWithId(requireContext(), noteDao)
+                        if (savedNoteData != null && !savedNoteData.noteText.isNullOrEmpty() && !savedNoteData.uploaded) {
+                            val stamp = device.firstTimestamp!!
+                            val savedNote = savedNoteData.noteText
+                            // uploader.note() queues WorkManager job (not suspend function)
+                            uploader.note(stamp, savedNote)
+                            // Mark note as uploaded (but keep it in database for retry if needed)
+                            AddNoteDialog.markNoteAsUploaded(requireContext(), noteDao, savedNoteData.id)
+                            android.util.Log.d("RecordFragment", "Medical history queued for upload, note ID: ${savedNoteData.id}")
+                        } else if (savedNoteData != null && savedNoteData.uploaded) {
+                            android.util.Log.d("RecordFragment", "Medical history already uploaded, skipping")
+                        }
+                    } catch (e: Exception) {
+                        // Log error but continue with recording
+                        android.util.Log.e("RecordFragment", "Error uploading note: ${e.message}", e)
+                    }
+                    // Ensure recording starts after note is processed
+                    withContext(Dispatchers.Main) {
+                        device.setRecording(true)
+                        // Clear medical history display after upload
+                        medicalHistoryTextView.visibility = View.GONE
+                    }
+                }
+            } else {
+                val firstTs = device.firstTimestamp
+                val lastTs = ((System.currentTimeMillis() / 15000) * 15).toInt()
+                if (firstTs != null) {
+                    val macId = device.address.value ?: "Unknown"
+                    CoroutineScope(Dispatchers.IO).launch {
+                        sendMacIdToTelegram(macId, firstTs, lastTs)
+                    }
+                }
+                device.setRecording(false)
+                device.firstTimestamp = null
+            }
         }
         return view
     }
@@ -101,8 +193,153 @@ class RecordFragment : Fragment() {
         }
     }
 
+//
+//    @SuppressLint("Range")
+//    override fun onActivityResult(request: Int, result: Int, data: Intent?) {
+//        super.onActivityResult(request, result, data)
+//        when {
+//            result != RESULT_OK -> return
+//            request == REQUEST_CONTACT && data != null -> {
+//                data.data?.let {
+//                    requireActivity().contentResolver.query(it, null, null, null, null)
+//                        .use { cursor ->
+//                            cursor?.use {
+//                                if (cursor.count == 0) return
+//                                cursor.moveToFirst()
+//                                val name = cursor.getString(
+//                                    cursor.getColumnIndex(
+//                                        ContactsContract.Contacts.DISPLAY_NAME
+//                                    )
+//                                )
+//                                val phone = cursor.getString(
+//                                    cursor.getColumnIndex(
+//                                        ContactsContract.CommonDataKinds.Phone.NUMBER
+//                                    )
+//                                ).replace("\\s".toRegex(), "") // remove spaces
+//
+//                                val combined = "$name $phone"
+//
+//                                // Name format check
+//                                val patientPattern = Regex(
+//                                    """^[A-Za-z]{3}\d{1,10}\s+([A-Za-z]+(\s+[A-Za-z]+){0,5})\s+([1-9][0-9]?|1[01][0-9]|120)/(m|f)$""",
+//                                    RegexOption.IGNORE_CASE
+//                                )
+//
+//                                // Phone format check (Indian number)
+//                                val phonePattern = Regex("^[6-9][0-9]{9}$")
+//
+//                                if (!patientPattern.matches(combined.trim())) {
+//                                    showInvalidFormatDialog(
+//                                        "Please follow the format:\n" +
+//                                                "XXX123456789 Name Age/m\n" +
+//                                                "Example: CKS7000123456 John Doe 45/m"
+//                                    )
+//                                } else if (!phonePattern.matches(phone)) {
+//                                    showInvalidFormatDialog(
+//                                        "Phone number is in incorrect format.\n" +
+//                                                "Example: 9876543210"
+//                                    )
+//                                } else {
+//                                    patient.set(name, phone)
+//                                }
+//                            }
+//                        }
+//                }
+//            }
+//        }
+//    }
+//
+////    private fun showInvalidFormatDialog(message: String) {
+////        val dialogView = LayoutInflater.from(requireContext())
+////            .inflate(R.layout.dialog_invalid_format, null)
+////
+////        val messageText = dialogView.findViewById<TextView>(R.id.txtMessage)
+////        messageText.text = message
+////        messageText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+////
+////        val dialog = AlertDialog.Builder(requireContext())
+////            .setView(dialogView)
+////            .setCancelable(false)
+////            .create()
+////
+////        dialogView.findViewById<Button>(R.id.btnOk).setOnClickListener {
+////            dialog.dismiss()
+////        }
+////
+////        dialog.show()
+////    }
+//
+//    private fun showInvalidFormatDialog(message: String) {
+//        val dialogView = LayoutInflater.from(requireContext())
+//            .inflate(R.layout.dialog_invalid_format, null)
+//
+//        val messageText = dialogView.findViewById<TextView>(R.id.txtMessage)
+//        messageText.text = message
+//        messageText.setTextColor(
+//            ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+//        )
+//
+//        val dialog = AlertDialog.Builder(requireContext())
+//            .setView(dialogView)
+//            .create()
+//
+//        dialogView.findViewById<Button>(R.id.btnOk).setOnClickListener {
+//            dialog.dismiss()
+//        }
+//
+//        dialog.show()
+//    }
+//
+//
+
+
+
+    private fun refreshMedicalHistory(textView: TextView) {
+        lifecycleScope.launch {
+            try {
+                val savedNoteData = noteDao.getUnuploadedNote()
+                if (savedNoteData != null && !savedNoteData.noteText.isNullOrEmpty()) {
+                    textView.text = "Medical History: ${savedNoteData.noteText.take(50)}${if (savedNoteData.noteText.length > 50) "..." else ""}"
+                    textView.visibility = View.VISIBLE
+                } else {
+                    textView.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                textView.visibility = View.GONE
+            }
+        }
+    }
+
     companion object {
         private const val REQUEST_CONTACT = 1001
+    }
+
+    private fun sendMacIdToTelegram(macId: String, firstTimestamp: Int, lastTimestamp: Int) {
+        try {
+            val botToken = "7597526068:AAGVJwkXbUO3R93UH4yWHtW5En-pYDf9Dl8"
+            val chatId = "738070910"
+
+            val message = """
+                📡 ECG Recording Completed
+                🔌 MAC ID: $macId
+                🕒 Start: $firstTimestamp
+                🕒 End:   $lastTimestamp
+            """.trimIndent()
+
+            val encodedMessage = URLEncoder.encode(message, "UTF-8")
+            val urlString =
+                "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&text=$encodedMessage"
+
+            val url = URL(urlString)
+            with(url.openConnection() as HttpURLConnection) {
+                requestMethod = "GET"
+                connectTimeout = 5000
+                readTimeout = 5000
+                responseCode
+                disconnect()
+            }
+        } catch (_: Exception) {
+        }
     }
 }
 

@@ -19,3 +19,9 @@ class Application : Application(), Configuration.Provider {
             .build()
     }
 }
+
+
+
+
+//@HiltAndroidApp
+//class MyApplication : Application()

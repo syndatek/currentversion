@@ -12,4 +12,10 @@
     <color name="battery_track">#9C27B0</color>
     <color name="white">#FFFFFF</color>
 
+    <!-- Device Control Switch Colors -->
+    <color name="device_active_color">#4CAF50</color>        <!-- Green for Active -->
+    <color name="device_active_track_color">#81C784</color>  <!-- Light Green for Active Track -->
+    <color name="device_sleep_color">#F44336</color>         <!-- Red for Sleep -->
+    <color name="device_sleep_track_color">#EF9A9A</color>   <!-- Light Red for Sleep Track -->
+
 </resources>

@@ -1,9 +1,7 @@
 package com.carditek.kesar.util.filters.edgecomputing
 
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.sqrt
 import kotlin.math.tan
 
 /**
@@ -68,7 +66,6 @@ class ButterworthFilter(
         for (i in 0 until sectionsPerOrder) {
             val angle = PI * (2.0 * i + 1.0) / (2.0 * order)
             val alpha = sin(angle)
-            val beta = cos(angle)
             
             val a0 = 1.0 + 2.0 * alpha * k + k * k
             val a1 = 2.0 * (k * k - 1.0) / a0
@@ -97,7 +94,6 @@ class ButterworthFilter(
         for (i in 0 until sectionsPerOrder) {
             val angle = PI * (2.0 * i + 1.0) / (2.0 * order)
             val alpha = sin(angle)
-            val beta = cos(angle)
             
             val a0 = 1.0 + 2.0 * alpha * k + k * k
             val a1 = 2.0 * (k * k - 1.0) / a0

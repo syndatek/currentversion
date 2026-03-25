@@ -191,3 +191,203 @@ kapt {
 
 
 
+
+
+
+
+
+//
+////NEW TRY TO UPDATE
+//
+//apply plugin: 'com.android.application'
+//apply plugin: 'com.google.firebase.crashlytics'
+//apply plugin: 'com.google.gms.google-services'
+//apply plugin: 'dagger.hilt.android.plugin'
+//apply plugin: 'kotlin-android'
+//apply plugin: 'kotlin-kapt'
+//
+//def gitHash = { ->
+//    def stdout = new ByteArrayOutputStream()
+//    exec {
+//        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+//        standardOutput = stdout
+//    }
+//    return stdout.toString().trim()
+//}
+//
+//android {
+//
+//    namespace "com.carditek.kesar"
+//    compileSdk 34
+//
+//    lint {
+//        abortOnError false
+//        checkReleaseBuilds false
+//    }
+//
+//    defaultConfig {
+//
+//        applicationId "com.carditek.kesar"
+//
+//        minSdk 23
+//        targetSdk 34
+//
+//        versionCode 1
+//        versionName "4.0.0"
+//
+//        testInstrumentationRunner "com.carditek.kesar.TestRunner"
+//
+//        buildConfigField "String", "APP_VERSION_NAME", "\"${versionName}\""
+//        buildConfigField "String", "GIT_HASH", "\"${gitHash()}\""
+//
+//        kapt {
+//            arguments {
+//                arg("room.schemaLocation", "$projectDir/schemas")
+//            }
+//        }
+//    }
+//
+//    buildFeatures {
+//        buildConfig true
+//        dataBinding true
+//        viewBinding true
+//    }
+//
+//    buildTypes {
+//
+//        release {
+//            minifyEnabled false
+//            proguardFiles getDefaultProguardFile(
+//                    'proguard-android-optimize.txt'
+//            ), 'proguard-rules.pro'
+//        }
+//
+//        debug {
+//            signingConfig signingConfigs.debug
+//        }
+//    }
+//
+//    applicationVariants.all { variant ->
+//        variant.outputs.all { output ->
+//            def apkName = "sydantek.apk"
+//            outputFileName = apkName
+//        }
+//    }
+//
+//    compileOptions {
+//        sourceCompatibility JavaVersion.VERSION_17
+//        targetCompatibility JavaVersion.VERSION_17
+//    }
+//
+//    kotlinOptions {
+//        jvmTarget = "17"
+//    }
+//
+//    packagingOptions {
+//        resources {
+//            excludes += [
+//                    "META-INF/AL2.0",
+//                    "META-INF/LGPL2.1"
+//            ]
+//        }
+//    }
+//
+//    signingConfigs {
+//        debug {
+//            storeFile file('../debug.keystore')
+//        }
+//    }
+//}
+//
+//dependencies {
+//
+//    implementation fileTree(dir: 'libs', include: ['*.jar'])
+//
+//    // Core Android
+//    implementation "androidx.core:core-ktx:1.13.1"
+//    implementation "androidx.appcompat:appcompat:1.7.0"
+//    implementation "androidx.constraintlayout:constraintlayout:2.2.0"
+//    implementation "com.google.android.material:material:1.12.0"
+//
+//    implementation "androidx.preference:preference-ktx:1.2.1"
+//    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+//
+//    // Lifecycle
+//    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.2"
+//    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.8.2"
+//    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2"
+//
+//    // Navigation
+//    implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
+//    implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
+//    implementation "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"
+//
+//    // Coroutines
+//    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+//    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
+//
+//    // Networking
+//    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+//    implementation "com.squareup.okhttp3:okhttp-urlconnection:4.12.0"
+//
+//    // Firebase
+//    implementation platform("com.google.firebase:firebase-bom:33.1.1")
+//    implementation "com.google.firebase:firebase-analytics-ktx"
+//    implementation "com.google.firebase:firebase-crashlytics-ktx"
+//
+//    // Google
+//    implementation "com.google.android.gms:play-services-auth:21.0.1"
+//
+//    // Phone number parsing
+//    implementation "com.googlecode.libphonenumber:libphonenumber:8.13.40"
+//
+//    // Hilt
+//    implementation "com.google.dagger:hilt-android:$hilt_version"
+//    kapt "com.google.dagger:hilt-compiler:$hilt_version"
+//
+//    testImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
+//    androidTestImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
+//    kaptTest "com.google.dagger:hilt-compiler:$hilt_version"
+//    kaptAndroidTest "com.google.dagger:hilt-compiler:$hilt_version"
+//
+//    // WorkManager
+//    implementation "androidx.work:work-runtime-ktx:$work_version"
+//    androidTestImplementation "androidx.work:work-testing:$work_version"
+//    androidTestImplementation "androidx.work:work-multiprocess:$work_version"
+//
+//    implementation "androidx.hilt:hilt-work:1.2.0"
+//    kapt "androidx.hilt:hilt-compiler:1.2.0"
+//
+//    // Room
+//    implementation "androidx.room:room-runtime:$room_version"
+//    implementation "androidx.room:room-ktx:$room_version"
+//    kapt "androidx.room:room-compiler:$room_version"
+//
+//    implementation "androidx.room:room-guava:$room_version"
+//    testImplementation "androidx.room:room-testing:$room_version"
+//
+//    // Testing
+//    testImplementation 'junit:junit:4.13.2'
+//
+//    androidTestImplementation "androidx.test.ext:junit:1.1.5"
+//    androidTestImplementation "androidx.test:rules:1.5.0"
+//
+//    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+//    androidTestImplementation "androidx.test.espresso:espresso-contrib:3.5.1"
+//    androidTestImplementation "androidx.test.espresso:espresso-idling-resource:3.5.1"
+//
+//    testImplementation "androidx.arch.core:core-testing:2.2.0"
+//
+//    // Guava
+//    implementation "com.google.guava:guava:33.2.1-android"
+//    testImplementation "com.google.guava:guava:33.2.1-android"
+//    androidTestImplementation "com.google.guava:guava:33.2.1-android"
+//
+//    // Coroutines Guava
+//    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.8.1"
+//    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.8.1"
+//}
+//
+//kapt {
+//    correctErrorTypes true
+//}

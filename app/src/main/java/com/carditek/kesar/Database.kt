@@ -153,7 +153,7 @@ object DatabaseModule {
     @Singleton
     fun provideChunkDatabase(@ApplicationContext context: Context): ChunkDatabase {
         return Room.databaseBuilder(context, ChunkDatabase::class.java, "Chunks")
-            .fallbackToDestructiveMigration() // For development - handles version upgrade
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

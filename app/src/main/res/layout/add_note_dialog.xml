@@ -22,7 +22,7 @@
             android:id="@+id/notes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Additional note..."
+            android:hint="Additional note"
             android:inputType="textMultiLine"
             android:minLines="2"
             android:gravity="top" />
@@ -52,7 +52,7 @@
         <CheckBox android:id="@+id/option_PostEcg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Post Ecg"/>
         <CheckBox android:id="@+id/option_Thyroid" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Thyroid"/>
         <CheckBox android:id="@+id/option_Hypertension" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hypertension"/>
-        <CheckBox android:id="@+id/option_DiabetesMellitu" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Diabetes Mellitu"/>
+        <CheckBox android:id="@+id/option_DiabetesMellitus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Diabetes Mellitus"/>
         <CheckBox android:id="@+id/option_HeartAttack" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Heart Attack"/>
        <CheckBox android:id="@+id/option_Palpitations" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Palpitations"/>
         <CheckBox android:id="@+id/option_ChestPain" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Chest Pain"/>
@@ -60,7 +60,7 @@
         <CheckBox android:id="@+id/option_CoronaryStent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Coronary Stent"/>
         <CheckBox android:id="@+id/option_BypassSurgery" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bypass Surgery"/>
         <CheckBox android:id="@+id/option_LegSwelling" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Leg Swelling"/>
-        <CheckBox android:id="@+id/option_generalcheckup" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="General Checkup"/>
+        <CheckBox android:id="@+id/option_Generalcheckup" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="General Checkup"/>
         <CheckBox android:id="@+id/option_BreathingProblems" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breathing Problems"/>
         <CheckBox android:id="@+id/option_Hcm" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hcm"/>
         <CheckBox android:id="@+id/option_Dcm" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dcm"/>

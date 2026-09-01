@@ -4,7 +4,9 @@ import android.util.Log
 import com.carditek.kesar.Cache
 import com.carditek.kesar.cloud.Uploader
 import com.carditek.kesar.util.filters.edgecomputing.EdgeComputingProcessor
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 import androidx.lifecycle.LiveData
@@ -14,86 +16,125 @@ import javax.inject.Inject
 
 
 class DataHandler @Inject constructor(
-    private val uploader: Uploader,
-    private val cache: Cache,
-    private val edgeComputingProcessor: EdgeComputingProcessor,
-    private val state: State
+
+    private val uploader: Uploader,//Object for uploading ECG data to cloud.
+    private val cache: Cache,//Stores ECG data locally.
+    private val edgeComputingProcessor: EdgeComputingProcessor,//Processes ECG signals locally.
+    private val state: State//Stores packet statistics and connection state.
 )  {
+    // Use a proper coroutine scope tied to the lifecycle of DataHandler
+    private val handlerJob = SupervisorJob()
+    private val handlerScope = CoroutineScope(handlerJob + Dispatchers.IO)
     // LiveData for battery percentage
     private val _batteryPercentage = MutableLiveData<Int>().apply{value=100}
     val batteryPercentage: LiveData<Int> get() = _batteryPercentage
 
-    private val packets = state.stats.packets
-    private val bytes = state.stats.bytes
-
+    //PACKET STATISTICS
+    private val packets = state.stats.packets//Tracks packet statistics.
+    private val bytes = state.stats.bytes//Tracks total bytes received.
+//TIMEBASE INITIALIZATION
     // Initialize the timebase, next, buffer, etc.
-    private val timebase = System.currentTimeMillis() - SystemClock.elapsedRealtime()
-    private var next: Int = 0
-    private var buffer: ByteArray = ByteArray(BUFFER_SIZE)
-    private var serial: Int = 0
-    private var timestamp: Int = 0
+    private val timebase = System.currentTimeMillis() - SystemClock.elapsedRealtime() //Creates synchronized timestamp reference. Used for ECG timing.
+    private var next: Int = 0//Stores expected next packet serial number.
+    private var buffer: ByteArray = ByteArray(BUFFER_SIZE)//Creates large ECG buffer.
+    private var serial: Int = 0//Stores current packet serial.
+    private var timestamp: Int = 0//Stores current timestamp.
     private var extractedBytes: ByteArray? = null
-    var recording: Boolean = false
+    //RECORDING FLAG
+    var recording: Boolean = false//Indicates whether recording is active.
         set(value) {
             field = value
             Log.i(TAG, "recording: $field")
         }
 
-    fun handle(packet: ByteArray) {
-        // Update stats, handle packets, etc.
-        ++packets.total
-        bytes.total += packet.size
+    fun resetProcessing() {                      //////////for reset his bundle
 
-        if (packet.size != PACKET_SIZE) {
-            ++packets.short
-            Log.i(TAG, "Received buffer size: ${packet.size}")
-            return
+        edgeComputingProcessor.reset()
+
+        Log.d(TAG, "Edge Processing Reset")
+
+    }
+
+    fun cleanup() {
+        // Cancel all coroutines to prevent memory leaks
+        handlerJob.cancel()
+        Log.d(TAG, "DataHandler cleaned up")
+    }// till now
+
+    //HANDLE FUNCTION
+    fun handle(packet: ByteArray) {// main function  handles every incoming bluetooth packet
+
+        // UPDATE STATISTICS,Update stats, handle packets, etc.
+        ++packets.total //Increase total packet count.
+        bytes.total += packet.size //Add packet size to byte counter.
+
+        //Packet Size Check
+
+        if (packet.size != PACKET_SIZE) { // check packet size validity expected 244 bytes
+            ++packets.short //Counts invalid packets.
+            Log.i(TAG, "Received buffer size: ${packet.size}")//Logs incorrect packet size.
+            return//Stops processing invalid packet.
         }
+        //SERIAL NUMBER EXTRACTION
 
         // Process the serial numbers, reinitializing buffer if necessary
-        val actual = Protocol.serial(packet)
-        if (actual != next) {
-            Log.w(TAG, "Got $actual, expected $serial")
-            ++packets.skips
-            next = actual
+        val actual = Protocol.serial(packet)//Extracts packet serial number.
+
+       // PACKET LOSS DETECTION
+        if (actual != next) { //Checks if packet sequence is broken.
+            Log.w(TAG, "Got $actual, expected $serial")//Logs packet mismatch.
+            ++packets.skips //Counts skipped packets.
+            next = actual //Resynchronizes packet sequence.
         }
 
-        next = (next + 1) and 0xffff
+        next = (next + 1) and 0xffff//Calculates next expected packet number.
 
-        val now = timebase + SystemClock.elapsedRealtime()
-        val seconds = now / 1000
-        val stamp = (seconds - (seconds % BUFFER_SECONDS)).toInt()
+        //CURRENT TIME
+        val now = timebase + SystemClock.elapsedRealtime()//Gets current synchronized time
+        val seconds = now / 1000 //Converts milliseconds to seconds.
+        val stamp = (seconds - (seconds % BUFFER_SECONDS)).toInt()//Rounds timestamp to nearest 15-second block.
 
-        if (seconds > timestamp + BUFFER_SECONDS + BUFFER_SECONDS / 3) {
+//BUFFER REINITIALIZATION
+
+        if (seconds > timestamp + BUFFER_SECONDS + BUFFER_SECONDS / 3) { //Checks if buffer timing drift occurred.
             Log.w(TAG, "Reinitializing from $timestamp to $stamp.")
             val packets = BUFFER_PACKETS * (seconds - stamp).toInt() / BUFFER_SECONDS
 
             if (timestamp > timebase) flush()
-            serial = (actual - packets) and 0xffff
-            timestamp = stamp
+            serial = (actual - packets) and 0xffff //Resets serial synchronization.
+            timestamp = stamp //Updates timestamp
+        }
+        //PACKET DIFFERENCE
+
+        var difference = (actual - serial) and 0xffff //Calculates packet position inside buffer.
+        if (difference >= BUFFER_PACKETS) {//Checks if buffer is full.
+            flush() // Uploads existing buffer.
+            timestamp += BUFFER_SECONDS//Moves timestamp forward.
+            difference = 0 //Reset packet difference
+            serial = actual //Reset serial number.
         }
 
-        var difference = (actual - serial) and 0xffff
-        if (difference >= BUFFER_PACKETS) {
-            flush()
-            timestamp += BUFFER_SECONDS
-            difference = 0
-            serial = actual
-        }
-
-        val offset = difference * PAYLOAD_BYTES
+        val offset = difference * PAYLOAD_BYTES //Calculates write position inside buffer.
+//COPY ECG DATA
         packet.copyInto(buffer, offset, 4, 4 + PAYLOAD_BYTES)
-        if ((difference + 1) % PACKETS_PER_SECOND == 0) {
+        Log.d(
+            "PACKET_DEBUG",
+            packet.joinToString(" ") {
+                "%02X".format(it.toInt() and 0xFF)
+            }
+        )
+        //Copies ECG payload into main buffer.First 4 bytes are skipped because they contain metadata.
+        if ((difference + 1) % PACKETS_PER_SECOND == 0) { //Checks whether 1 second ECG data is collected.
             // Extract 1 second of RAW data (24000 bytes @ 1000 Hz)
-            val rawData = buffer.sliceArray(
+            val rawData = buffer.sliceArray(//Extracts 1-second ECG data.Size = 24000 bytes.
                 offset + PAYLOAD_BYTES - PAYLOAD_BYTES_PER_SECOND
                         until offset + PAYLOAD_BYTES
             )
-            
+
             // Path 1: EDGE COMPUTING
             // Process: Decimate → Filter → HR → SNR → Sat → LiveData (UI)
             edgeComputingProcessor.processRawData(rawData)
-            
+
             // Path 2: CACHE
             // Process: Decimate → Store → (if recording) Upload RAW to Cloud
             // Note: No filtering in cache path - RAW data is uploaded
@@ -182,21 +223,21 @@ class DataHandler @Inject constructor(
 
         }
     }
-
+//CLOSE FUNCTION
     fun close() {
         flush()
-    }
-
-    private fun flush() {
+    }//Uploads remaining data before closing.
+//FLUSH FUNCTION
+    private fun flush() {//Uploads buffer if recording enabled.
         if (recording) {
-            store(buffer, timestamp)
-            buffer = ByteArray(BUFFER_SIZE)
+            store(buffer, timestamp)//Stores/upload ECG buffer.
+            buffer = ByteArray(BUFFER_SIZE)//Creates new empty buffer.
         }
     }
 
-    private fun store(buffer: ByteArray, stamp: Int) {
-        GlobalScope.launch {
-            uploader.upload(stamp, LEADS, FREQUENCY, buffer)
+    private fun store(buffer: ByteArray, stamp: Int) {//Uploads Ecg Data
+        handlerScope.launch {//Runs upload asynchronously.
+            uploader.upload(stamp, LEADS, FREQUENCY, buffer)//Uploads ECG data to cloud.
 
         }
     }

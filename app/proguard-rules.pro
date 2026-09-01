@@ -12,6 +12,12 @@
 #   public *;
 #}
 
+# WebView JS interface methods are called by name from JavaScript.
+# Keep them stable across release minification.
+-keepclassmembers class com.carditek.kesar.WebViewFragment$Interface {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable

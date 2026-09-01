@@ -316,8 +316,8 @@
 //
 //    private fun sendMacIdToTelegram(macId: String, firstTimestamp: Int, lastTimestamp: Int) {
 //        try {
-//            val botToken = "7597526068:AAGVJwkXbUO3R93UH4yWHtW5En-pYDf9Dl8"
-//            val chatId = "738070910"
+//            val botToken = "<removed>"
+//            val chatId = "<removed>"
 //
 //            val message = """
 //                📡 ECG Recording Completed
@@ -362,6 +362,7 @@ import android.provider.ContactsContract
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.carditek.kesar.databinding.FragmentRecordBinding
@@ -399,6 +400,14 @@ class RecordFragment : Fragment() {
         ContactsContract.CommonDataKinds.Phone.CONTENT_URI
     )
 
+    private val pickContactLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) return@registerForActivityResult
+        val data = result.data ?: return@registerForActivityResult
+        handleContactSelection(data)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -411,14 +420,8 @@ class RecordFragment : Fragment() {
         binding.device = device
 
         setupButtons()
-        refreshMedicalHistory()
 
         return binding.root
-    }
-
-    override fun onResume() {
-        super.onResume()
-        refreshMedicalHistory()
     }
 
     // -------------------------------------------------
@@ -430,16 +433,10 @@ class RecordFragment : Fragment() {
         // Select / Clear patient
         binding.selectOrClearPatient.setOnClickListener {
             if (patient.empty.value == true) {
-                startActivityForResult(contactIntent, REQUEST_CONTACT)
+                pickContactLauncher.launch(contactIntent)
             } else {
                 patient.clear()
             }
-        }
-
-        // Add Medical History
-        binding.addNoteButton.setOnClickListener {
-            val dialog = AddNoteDialog()
-            dialog.show(parentFragmentManager, "AddNoteDialog")
         }
 
         // Start / Stop Recording
@@ -467,7 +464,7 @@ class RecordFragment : Fragment() {
 
         device.setRecording(true)
 
-        // Upload medical history in background
+        // Upload any pending medical history in background (if exists).
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
 
             try {
@@ -481,13 +478,7 @@ class RecordFragment : Fragment() {
 
                     val stamp = device.firstTimestamp!!
 
-                    uploader.note(stamp, savedNote.noteText)
-
-                    AddNoteDialog.markNoteAsUploaded(
-                        requireContext(),
-                        noteDao,
-                        savedNote.id
-                    )
+                    uploader.note(stamp, savedNote.noteText, savedNote.id)
                 }
 
             } catch (e: Exception) {
@@ -495,7 +486,6 @@ class RecordFragment : Fragment() {
             }
 
             withContext(Dispatchers.Main) {
-                binding.medicalHistoryText.visibility = View.GONE
             }
         }
     }
@@ -526,92 +516,41 @@ class RecordFragment : Fragment() {
     // Refresh Medical History UI
     // -------------------------------------------------
 
-    private fun refreshMedicalHistory() {
-
-        viewLifecycleOwner.lifecycleScope.launch {
-
-            try {
-
-                val note = noteDao.getUnuploadedNote()
-
-                if (note != null && !note.noteText.isNullOrEmpty()) {
-
-                    binding.medicalHistoryText.text =
-                        "Medical History: ${note.noteText.take(120)}"
-
-                    binding.medicalHistoryText.visibility = View.VISIBLE
-
-                } else {
-
-                    binding.medicalHistoryText.visibility = View.GONE
-                }
-
-            } catch (_: Exception) {
-
-                binding.medicalHistoryText.visibility = View.GONE
-            }
-        }
-    }
-
     // -------------------------------------------------
     // Contact Selection
     // -------------------------------------------------
 
     @SuppressLint("Range")
-    override fun onActivityResult(request: Int, result: Int, data: Intent?) {
-
-        super.onActivityResult(request, result, data)
-
-        if (result != RESULT_OK) return
-
-        if (request == REQUEST_CONTACT && data != null) {
-
-            data.data?.let {
-
-                requireActivity().contentResolver.query(it, null, null, null, null)
-                    .use { cursor ->
-
-                        cursor?.let {
-
-                            if (cursor.count == 0) return
-
-                            cursor.moveToFirst()
-
-                            val name = cursor.getString(
-                                cursor.getColumnIndex(
-                                    ContactsContract.Contacts.DISPLAY_NAME
-                                )
-                            )
-
-                            val phone = cursor.getString(
-                                cursor.getColumnIndex(
-                                    ContactsContract.CommonDataKinds.Phone.NUMBER
-                                )
-                            )
-
-                            if (!android.util.Patterns.PHONE.matcher(phone).matches()) {
-
-                                Snackbar.make(
-                                    requireView(),
-                                    "Invalid phone number: $phone",
-                                    Snackbar.LENGTH_LONG
-                                ).show()
-
-                            } else if (name.length < 3) {
-
-                                Snackbar.make(
-                                    requireView(),
-                                    "Name must be at least 3 characters",
-                                    Snackbar.LENGTH_LONG
-                                ).show()
-
-                            } else {
-
-                                patient.set(name, phone)
-                            }
+    private fun handleContactSelection(data: Intent) {
+        data.data?.let { uri ->
+            requireActivity().contentResolver.query(uri, null, null, null, null)
+                .use { cursor ->
+                    cursor?.let {
+                        if (cursor.count == 0) return
+                        cursor.moveToFirst()
+                        val name = cursor.getString(
+                            cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                        )
+                        val phone = cursor.getString(
+                            cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                        )
+                        if (!android.util.Patterns.PHONE.matcher(phone).matches()) {
+                            Snackbar.make(
+                                requireView(),
+                                "Invalid phone number: $phone",
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                        } else if (name.length < 3) {
+                            Snackbar.make(
+                                requireView(),
+                                "Name must be at least 3 characters",
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                        } else {
+                            patient.set(name, phone)
                         }
                     }
-            }
+                }
         }
     }
 
@@ -627,8 +566,10 @@ class RecordFragment : Fragment() {
 
         try {
 
-            val botToken = "YOUR_BOT_TOKEN"
-            val chatId = "YOUR_CHAT_ID"
+            if (!BuildConfig.TELEGRAM_ENABLED) return
+            val botToken = BuildConfig.TELEGRAM_BOT_TOKEN
+            val chatId = BuildConfig.TELEGRAM_CHAT_ID
+            if (botToken.isBlank() || chatId.isBlank()) return
 
             val message = """
 ECG Recording Completed
@@ -656,7 +597,4 @@ End: $lastTimestamp
         }
     }
 
-    companion object {
-        private const val REQUEST_CONTACT = 1001
-    }
 }

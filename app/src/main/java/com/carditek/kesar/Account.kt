@@ -3,6 +3,7 @@ package com.carditek.kesar
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.LiveData
 
 interface Account {
@@ -11,7 +12,7 @@ interface Account {
     val photo: LiveData<Uri>
     val token: String?
 
-    fun maybeSignIn(activity: Activity, code: Int) {}
+    fun maybeSignIn(activity: Activity, signInLauncher: ActivityResultLauncher<Intent>) {}
     fun signOut(activity: Activity) {}
     fun onSignInSuccess(data: Intent?) {}
     fun refresh() {}

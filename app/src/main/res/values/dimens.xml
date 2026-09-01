@@ -5,4 +5,9 @@
     <dimen name="nav_header_vertical_spacing">8dp</dimen>
     <dimen name="nav_header_height">176dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
+    <!-- Live overlay offsets (phone); overridden in sw600dp for tablets -->
+    <dimen name="live_hr_margin_start">100dp</dimen>
+    <dimen name="live_hr_margin_bottom">258dp</dimen>
+    <dimen name="live_snr_margin_start">100dp</dimen>
+    <dimen name="live_snr_margin_bottom">200dp</dimen>
 </resources>

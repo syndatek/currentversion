@@ -553,8 +553,9 @@ https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={MESS
 ```
 
 **Configuration:**
-- Bot Token: `7597526068:AAGVJwkXbUO3R93UH4yWHtW5En-pYDf9Dl8`
-- Chat ID: `738070910`
+- Bot Token: use `TELEGRAM_BOT_TOKEN` (build-time Gradle property; do not hardcode in repo)
+- Chat ID: use `TELEGRAM_CHAT_ID` (build-time Gradle property; do not hardcode in repo)
+- Enable flag: `TELEGRAM_ENABLED=true` to send Telegram (disable for production; use backend)
 
 **Complete Process:**
 ```

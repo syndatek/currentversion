@@ -9,8 +9,7 @@ import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -50,23 +49,20 @@ class DatabaseTest {
     }
 
     @Test
-    @ExperimentalCoroutinesApi
-    fun testChunks() = runBlockingTest {
+    fun testChunks() = runTest {
         assertNotNull(chunks)
         assertEquals(chunks.getAll().size, 0)
     }
 
     @Test
-    @ExperimentalCoroutinesApi
-    fun testInsertion() = runBlockingTest {
+    fun testInsertion() = runTest {
         chunks.insert(zero)
         val chunk = chunks.get(zero.address, zero.stamp)
         assertNotNull(chunk)
     }
 
     @Test
-    @ExperimentalCoroutinesApi
-    fun testDeletion() = runBlockingTest {
+    fun testDeletion() = runTest {
         chunks.insert(zero)
         assertEquals(1, chunks.count())
         chunks.delete(zero.address, zero.stamp)

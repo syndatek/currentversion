@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.carditek.kesar.Account
@@ -34,8 +35,9 @@ class GoogleAccount(private val application: Context) : Account {
     override val token: String?
         get() = google?.idToken
 
-    override fun maybeSignIn(activity: Activity, code: Int) {
-        activity.startActivityForResult(client(activity).signInIntent, code)
+    override fun maybeSignIn(activity: Activity, signInLauncher: ActivityResultLauncher<Intent>) {
+        if (GoogleSignIn.getLastSignedInAccount(application) != null) return
+        signInLauncher.launch(client(activity).signInIntent)
     }
 
     override fun signOut(activity: Activity) {

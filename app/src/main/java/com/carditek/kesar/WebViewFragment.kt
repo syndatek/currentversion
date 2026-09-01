@@ -32,10 +32,20 @@ abstract class WebViewFragment : Fragment() {
         super.onStart()
         val context = this.requireContext()
         webView().run {
+            // WebView hardening (production baseline).
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+            settings.allowFileAccess = false
+            settings.allowContentAccess = false
+            settings.javaScriptCanOpenWindowsAutomatically = false
+            @Suppress("DEPRECATION")
+            settings.savePassword = false
+            settings.setSupportMultipleWindows(false)
+            settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+
             webChromeClient = ChromeClient()
             webViewClient = WebClient(backend, cache)
+            // JS bridge increases attack surface; keep it minimal and avoid release logging.
             addJavascriptInterface(Interface(context), "Android")
         }
     }
@@ -58,13 +68,17 @@ abstract class WebViewFragment : Fragment() {
 
         @JavascriptInterface
         fun log(message: String) {
-            Log.i(TAG, message)
+            if (BuildConfig.DEBUG) {
+                Log.i(TAG, message)
+            }
         }
     }
 
     private class ChromeClient : WebChromeClient() {
         override fun onConsoleMessage(message: ConsoleMessage): Boolean {
-            Log.d(TAG, "(js) " + message.message())
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "(js) " + message.message())
+            }
             return true
         }
     }
@@ -72,8 +86,26 @@ abstract class WebViewFragment : Fragment() {
     private class WebClient(
         private val backend: Backend, private val cache: Cache
     ) : WebViewClient() {
+        private fun isAllowed(url: android.net.Uri): Boolean {
+            // Allow only your production domain + local blank page.
+            val s = url.toString()
+            if (s == "about:blank") return true
+            return url.scheme == "https" && url.host == "ecg.carditek.com"
+        }
+
+        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+            val uri = request?.url ?: return false
+            return if (isAllowed(uri)) {
+                false
+            } else {
+                true
+            }
+        }
+
         override fun onLoadResource(view: WebView?, url: String?) {
-            Log.i(TAG, "Loading: $url")
+            if (BuildConfig.DEBUG) {
+                Log.i(TAG, "Loading: $url")
+            }
             super.onLoadResource(view, url)
         }
 
@@ -82,6 +114,12 @@ abstract class WebViewFragment : Fragment() {
             request: WebResourceRequest?
         ): WebResourceResponse? {
             request?.url?.let {
+                if (!isAllowed(it)) {
+                    return WebResourceResponse(
+                        "text/plain", "UTF-8", 403, "Blocked", null,
+                        ByteArrayInputStream(ByteArray(0))
+                    )
+                }
                 if (it.path == "/app/data" || (it.path?.startsWith("/api/data/") == true)) {
                     val address: String?
                     val timestamp: Int?

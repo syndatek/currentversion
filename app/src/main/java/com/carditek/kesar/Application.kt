@@ -7,21 +7,22 @@ import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
+
 @HiltAndroidApp
 class Application : Application(), Configuration.Provider {
     @Inject
     lateinit var factory: HiltWorkerFactory
 
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setWorkerFactory(factory)
             .setMinimumLoggingLevel(INFO)
             .build()
-    }
 }
 
 
 
 
-//@HiltAndroidApp
-//class MyApplication : Application()
+
+
+

@@ -16,6 +16,7 @@ class FakeDevice : Device {
 
     override val address: LiveData<String> = _address
     override val recording: LiveData<Boolean> = _recording
+    override var firstTimestamp: Int? = null
 }
 
 @Module

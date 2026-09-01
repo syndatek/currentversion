@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablet / large phone landscape: more breathing room -->
+    <dimen name="fab_margin">24dp</dimen>
+    <!-- Live: keep overlays readable on wide screens -->
+    <dimen name="live_hr_margin_start">48dp</dimen>
+    <dimen name="live_hr_margin_bottom">220dp</dimen>
+    <dimen name="live_snr_margin_start">48dp</dimen>
+    <dimen name="live_snr_margin_bottom">160dp</dimen>
+    <!-- Centered column width for form screens -->
+    <dimen name="record_content_max_width">640dp</dimen>
+    <dimen name="nav_drawer_width">320dp</dimen>
+</resources>

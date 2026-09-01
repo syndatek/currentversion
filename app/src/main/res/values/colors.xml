@@ -11,11 +11,72 @@
     <color name="battery_fill">#FF9800</color>    <!-- Material Orange 500 -->
     <color name="battery_track">#9C27B0</color>
     <color name="white">#FFFFFF</color>
+    <!-- Medical history banner (neutral, readable) -->
+    <color name="history_status_bg">#EEEEEE</color>
+    <color name="history_status_text">#424242</color>
 
     <!-- Device Control Switch Colors -->
     <color name="device_active_color">#4CAF50</color>        <!-- Green for Active -->
     <color name="device_active_track_color">#81C784</color>  <!-- Light Green for Active Track -->
     <color name="device_sleep_color">#F44336</color>         <!-- Red for Sleep -->
     <color name="device_sleep_track_color">#EF9A9A</color>   <!-- Light Red for Sleep Track -->
+
+    <!-- Primary -->
+    <color name="primary">#1565C0</color>
+    <color name="primary_dark">#0D47A1</color>
+    <color name="primary_light">#42A5F5</color>
+
+    <!-- Background -->
+    <color name="background">#F4F7FC</color>
+    <color name="surface">#FFFFFF</color>
+
+    <!-- Text -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Status Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+    <color name="danger">#F44336</color>
+
+    <!-- Card -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_border">#E0E0E0</color>
+
+    <!-- Heart Rate -->
+    <color name="heart_red">#E53935</color>
+
+    <!-- Icons -->
+    <color name="icon_blue">#1565C0</color>
+
+    <!-- Divider -->
+    <color name="divider">#EEEEEE</color>
+
+    <!-- Normal -->
+    <color name="normal_green">#43A047</color>
+
+    <!-- High / Low -->
+    <color name="abnormal_red">#D32F2F</color>
+
+    <!-- Light Red -->
+    <color name="light_red">#FFEBEE</color>
+
+    <!-- Light Green -->
+    <color name="light_green">#E8F5E9</color>
+
+    <!-- Light Blue -->
+    <color name="light_blue">#E3F2FD</color>
+
+    <!-- Gray -->
+    <color name="gray100">#FAFAFA</color>
+    <color name="gray200">#F5F5F5</color>
+    <color name="gray300">#EEEEEE</color>
+    <color name="gray500">#9E9E9E</color>
+    <color name="gray700">#616161</color>
+    <color name="black">#000000</color>
+
+
+
 
 </resources>

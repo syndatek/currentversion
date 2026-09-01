@@ -25,6 +25,11 @@
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_menu_settings"
             android:title="@string/menu_settings" />
+        <item
+            android:id="@+id/nav_hisbundle"
+            android:icon="@drawable/stop"
+            android:title="His-Bundle" />
+
     </group>
 
     <group android:id="@+id/miscellaneous">

@@ -15,6 +15,7 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -73,16 +74,16 @@ class UploadTest {
         //
         // Hence the following busy loop.  Note that retrieving the work information is not a
         // lightweight operation, so it mustn't be done too often!
-        lateinit var info: WorkInfo
+        var info: WorkInfo? = null
         for (i in 0 until 50) {
             info = WorkManager.getInstance(context).getWorkInfoById(uuid).get()
-            //val info = WorkManager.getInstance(context).getWorkInfoById(uuid).await()
-
-            if (info.state.isFinished) break
+            if (info?.state?.isFinished == true) break
             Thread.sleep(100)
         }
 
-        assertEquals(WorkInfo.State.SUCCEEDED, info.state)
-        assertEquals("01:02:03:04:05:06/1800000000/8/1000", info.outputData.getString("result"))
+        assertNotNull(info)
+        val finalInfo = info!!
+        assertEquals(WorkInfo.State.SUCCEEDED, finalInfo.state)
+        assertEquals("01:02:03:04:05:06/1800000000/8/1000", finalInfo.outputData.getString("result"))
     }
 }

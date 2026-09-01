@@ -4,10 +4,6 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import kotlin.math.abs
 
-/**
- * Improved Heart Rate Calculator (Pan–Tompkins + stability filters)
- * Works on 100 Hz decimated ECG from Lead II.
- */
 class HeartRateCalculator {
 
     // Live ECG heart rate
@@ -28,10 +24,6 @@ class HeartRateCalculator {
     private val hrHistory = mutableListOf<Int>()
     private val historySize = 3
 
-    /**
-     * Called every second with 100 decimated samples.
-     * Extracts Lead II and writes into 10-sec rolling buffer.
-     */
     fun updateHeartRateWindow(sampled: ByteArray, read24: (ByteArray, Int) -> Int) {
         val numSamples = 100
         val channel = 1  // Lead II
@@ -49,9 +41,6 @@ class HeartRateCalculator {
         }
     }
 
-    /**
-     * Calculates HR every 10 seconds using 1000-sample window.
-     */
     fun calculateHeartRateFromWindow() {
 
         // Wait until window full
@@ -89,9 +78,7 @@ class HeartRateCalculator {
         }
     }
 
-    /**
-     * Improved R-peak detection (Pan-Tompkins style)
-     */
+
     private fun detectRPeaksAndCalculateHR(ecg: DoubleArray, fs: Int): Int {
 
         if (ecg.size < 20) return 0

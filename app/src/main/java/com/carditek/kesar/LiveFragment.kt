@@ -38,10 +38,13 @@ class LiveFragment : WebViewFragment() {
     lateinit var patient: Patient
     @Inject
     lateinit var noteDao: NoteDao
+    @Inject
+    lateinit var medicalHistoryUploadNotifier: MedicalHistoryUploadNotifier
 
     private lateinit var binding: FragmentLiveBinding
-
+//    private var maxTimestampsLimit: Int? = null    // this is for the autorecord off
     private var timestampCounterJob: Job? = null
+    private var historyUploadJob: Job? = null
     private var sensorCheckDialog: AlertDialog? = null
     private var snrMonitoringJob: Job? = null
     private var saturationDialog: AlertDialog? = null
@@ -96,38 +99,34 @@ class LiveFragment : WebViewFragment() {
         super.onStart()
         lead2SNR = null
         lead2Saturated = false
+        startHistoryUploadStatus()
 
         appCache.heartRateLive.observe(viewLifecycleOwner) { hr ->
             binding.heartRateTextView.text = if (shouldShowHr(hr)) "$hr bpm" else "-- bpm"
         }
 
-        appCache.snrValuesLive.observe(viewLifecycleOwner) { (lead1SNR, lead2SNRValue) ->
-            lead2SNR = lead2SNRValue
-            if (appCache.isFilteringEnabled()) {
-                val lead1Text = if (lead1SNR != null && lead1SNR != Double.NEGATIVE_INFINITY) {
-                    String.format("%.1f", lead1SNR)
-                } else {
-                    "--"
-                }
-                val lead2Text = if (lead2SNRValue != null && lead2SNRValue != Double.NEGATIVE_INFINITY) {
-                    String.format("%.1f", lead2SNRValue)
-                } else {
-                    "--"
-                }
-                binding.snrTextView.text = "SNR: L1:$lead1Text dB  L2:$lead2Text dB"
-            } else {
-                binding.snrTextView.text = "SNR: --"
-            }
+//        appCache.snrValuesLive.observe(viewLifecycleOwner) { (lead1SNR, lead2SNRValue) ->
+//            lead2SNR = lead2SNRValue
+//            if (appCache.isFilteringEnabled()) {
+//                val lead1Text = if (lead1SNR != null && lead1SNR != Double.NEGATIVE_INFINITY) {
+//                    String.format("%.1f", lead1SNR)
+//                } else {
+//                    "--"
+//                }
+//                val lead2Text = if (lead2SNRValue != null && lead2SNRValue != Double.NEGATIVE_INFINITY) {
+//                    String.format("%.1f", lead2SNRValue)
+//                } else {
+//                    "--"
+//                }
+//                binding.snrTextView.text = "SNR: L1:$lead1Text dB  L2:$lead2Text dB"
+//            } else {
+//                binding.snrTextView.text = "SNR: --"
+//            }
+//        }
 
-            val currentHR = appCache.heartRateLive.value ?: 0
-            binding.heartRateTextView.text = if (shouldShowHr(currentHR)) "$currentHR bpm" else "-- bpm"
-        }
-
-        appCache.saturatedLeadsLive.observe(viewLifecycleOwner) { saturatedLeads ->
-            lead2Saturated = saturatedLeads.contains(2)
-            val currentHR = appCache.heartRateLive.value ?: 0
-            binding.heartRateTextView.text = if (shouldShowHr(currentHR)) "$currentHR bpm" else "-- bpm"
-        }
+//        appCache.saturatedLeadsLive.observe(viewLifecycleOwner) { saturatedLeads ->
+//            lead2Saturated = saturatedLeads.contains(2)
+//        }
 
         if (device.recording.value == true) {
             startLiveTimestampCounter()
@@ -141,14 +140,39 @@ class LiveFragment : WebViewFragment() {
             AddNoteDialog().show(parentFragmentManager, "AddNoteDialog")
         }
 
+//        binding.btnStop.setOnClickListener {
+//            val currentlyEnabled = appCache.isFilteringEnabled()
+//            appCache.setFilteringEnabled(!currentlyEnabled)//UNCONNNENT YESTERDAY
+//            appCache.setFilteringEnabled(true)
+//            updateFilterButton()
+//            applyEdgeComputingUiState()
+//            Toast.makeText(
+//                requireContext(),
+//                if (!currentlyEnabled) "Edge Computing ON" else "Edge Computing OFF",
+//                Toast.LENGTH_SHORT
+//            ).show()
+////                requireContext(),
+////                "Edge Computing ON",
+////                Toast.LENGTH_SHORT
+////            ).show()
+//        }
         binding.btnStop.setOnClickListener {
+
             val currentlyEnabled = appCache.isFilteringEnabled()
+
+            // Toggle the current state
             appCache.setFilteringEnabled(!currentlyEnabled)
+
             updateFilterButton()
             applyEdgeComputingUiState()
+
             Toast.makeText(
                 requireContext(),
-                if (!currentlyEnabled) "Edge Computing ON" else "Edge Computing OFF",
+                if (!currentlyEnabled) {
+                    "Edge Computing ON"
+                } else {
+                    "Edge Computing OFF"
+                },
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -157,15 +181,37 @@ class LiveFragment : WebViewFragment() {
         applyEdgeComputingUiState()
     }
 
+    private fun startHistoryUploadStatus() {
+        historyUploadJob?.cancel()
+        // Use event-based approach with much longer polling interval to save battery
+        historyUploadJob = viewLifecycleOwner.lifecycleScope.launch {
+            // Initial check
+            checkAndShowHistoryStatus()
+
+            // Listen for upload completion events
+            medicalHistoryUploadNotifier.medicalHistorySavedEvents.collect {
+                // Hide syncing status when upload completes
+                binding.historyUploadToggle.visibility = View.GONE
+            }
+        }
+    }
+
+    private suspend fun checkAndShowHistoryStatus() {
+        try {
+            val pending = withContext(Dispatchers.IO) { noteDao.getUnuploadedNote() }
+            if (pending != null) {
+                binding.historyUploadToggle.setText(R.string.history_status_syncing)
+                binding.historyUploadToggle.visibility = View.VISIBLE
+            } else {
+                binding.historyUploadToggle.visibility = View.GONE
+            }
+        } catch (_: Exception) {
+            binding.historyUploadToggle.visibility = View.GONE
+        }
+    }
+
     private fun shouldShowHr(hr: Int): Boolean {
-        if (!appCache.isFilteringEnabled()) return false
-        val snr = lead2SNR
-        val lead2Good =
-            snr != null &&
-                snr != Double.NEGATIVE_INFINITY &&
-                snr > snrGoodThresholdDb &&
-                !lead2Saturated
-        return hr > 0 && lead2Good
+        return hr > 0
     }
 
     private fun applyEdgeComputingUiState() {
@@ -173,12 +219,11 @@ class LiveFragment : WebViewFragment() {
             startSNRMonitoring()
             startSaturationMonitoring()
         } else {
-            binding.heartRateTextView.text = "-- bpm"
-            binding.snrTextView.text = "SNR: --"
+//            binding.snrTextView.text = "SNR: --"
             stopSNRMonitoring()
             stopSaturationMonitoring()
         }
-    }
+   }
 
     private fun startRecording() {
         if (device.firstTimestamp == null) {
@@ -191,8 +236,7 @@ class LiveFragment : WebViewFragment() {
                 val savedNoteData = AddNoteDialog.getSavedNoteWithId(requireContext(), noteDao)
                 if (savedNoteData != null && !savedNoteData.noteText.isNullOrEmpty() && !savedNoteData.uploaded) {
                     val stamp = device.firstTimestamp!!
-                    uploader.note(stamp, savedNoteData.noteText)
-                    AddNoteDialog.markNoteAsUploaded(requireContext(), noteDao, savedNoteData.id)
+                    uploader.note(stamp, savedNoteData.noteText, savedNoteData.id)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error uploading note: ${e.message}", e)
@@ -224,8 +268,12 @@ class LiveFragment : WebViewFragment() {
 
     private fun sendMacIdToTelegram(macId: String, firstTimestamp: Int, lastTimestamp: Int) {
         try {
-            val botToken = "7597526068:AAGVJwkXbUO3R93UH4yWHtW5En-pYDf9Dl8"
-            val chatId = "738070910"
+            // Telegram alerts are controlled by build-time config.
+            // For production, disable this and use your backend instead.
+            if (!BuildConfig.TELEGRAM_ENABLED) return
+            val botToken = BuildConfig.TELEGRAM_BOT_TOKEN
+            val chatId = BuildConfig.TELEGRAM_CHAT_ID
+            if (botToken.isBlank() || chatId.isBlank()) return
             val message = """
                  ECG Recording Completed
                  MAC ID: $macId
@@ -269,6 +317,35 @@ class LiveFragment : WebViewFragment() {
         }
     }
 
+//    // autostop logic
+//    private fun startLiveTimestampCounter() {
+//        binding.timestampToggle.visibility = View.VISIBLE
+//        timestampCounterJob?.cancel()
+//
+//        timestampCounterJob = lifecycleScope.launch {
+//            while (device.recording.value == true) {
+//
+//                val firstTs = device.firstTimestamp
+//                if (firstTs != null) {
+//
+//                    val nowTs = ((System.currentTimeMillis() / 15000) * 15).toInt()
+//                    val intervalNumber = (nowTs - firstTs) / 15
+//
+//                    binding.timestampToggle.text = "TS=$intervalNumber"
+//
+//                    //  ADD THIS BLOCK (AUTO STOP LOGIC)
+//                    device.maxTimestamps?.let { max ->
+//                        if (intervalNumber >= max) {
+//                            stopRecordingAndSendTelegram()
+//                            return@launch  // important to stop loop
+//                        }
+//                    }
+//                }
+//
+//                delay(1000)
+//            }
+//        }
+//    }
     private fun stopLiveTimestampCounter() {
         timestampCounterJob?.cancel()
         timestampCounterJob = null
@@ -276,23 +353,8 @@ class LiveFragment : WebViewFragment() {
     }
 
     private fun startSNRMonitoring() {
-        if (snrMonitoringJob?.isActive == true) return
-        snrMonitoringJob = viewLifecycleOwner.lifecycleScope.launch {
-            while (isActive) {
-                if (!appCache.isFilteringEnabled()) {
-                    stopSNRMonitoring()
-                    return@launch
-                }
-                val needsCheck = appCache.lowSNRWarningLive.value ?: false
-                if (needsCheck) {
-                    showSensorCheckDialog()
-                } else {
-                    sensorCheckDialog?.dismiss()
-                    sensorCheckDialog = null
-                }
-                delay(1000)
-            }
-        }
+        // Disabled - logic is commented out, was causing battery drain
+        // Re-enable if needed in the future
     }
 
     private fun stopSNRMonitoring() {
@@ -303,23 +365,8 @@ class LiveFragment : WebViewFragment() {
     }
 
     private fun startSaturationMonitoring() {
-        if (saturationMonitoringJob?.isActive == true) return
-        saturationMonitoringJob = viewLifecycleOwner.lifecycleScope.launch {
-            while (isActive) {
-                if (!appCache.isFilteringEnabled()) {
-                    stopSaturationMonitoring()
-                    return@launch
-                }
-                val saturatedLeads = appCache.saturatedLeadsLive.value ?: emptyList()
-                if (saturatedLeads.isNotEmpty()) {
-                    showSaturationDialog(saturatedLeads)
-                } else {
-                    saturationDialog?.dismiss()
-                    saturationDialog = null
-                }
-                delay(1000)
-            }
-        }
+        // Disabled - logic is commented out, was causing battery drain
+        // Re-enable if needed in the future
     }
 
     private fun stopSaturationMonitoring() {
@@ -331,7 +378,7 @@ class LiveFragment : WebViewFragment() {
 
     private fun showSensorCheckDialog() {
         if (!isAdded || context == null) return
-        val message = "Low signal quality detected (SNR low <= 6.0 dB).\n\nPlease check electrodes and sensor contact."
+        val message = "Low signal quality detected (SNR low <= 0.0 dB).\n\nPlease check electrodes and sensor contact."
         if (sensorCheckDialog?.isShowing == true) {
             sensorCheckDialog?.setMessage(message)
             return
@@ -383,6 +430,8 @@ class LiveFragment : WebViewFragment() {
         super.onStop()
         stopSNRMonitoring()
         stopSaturationMonitoring()
+        historyUploadJob?.cancel()
+        historyUploadJob = null
     }
 
     private fun extractOnlyName(fullName: String): String {

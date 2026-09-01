@@ -19,6 +19,7 @@ package com.carditek.kesar
 import androidx.lifecycle.LiveData
 
 interface Device {
+//    var maxTimestamps: Int?   // this is the autorecord off
     val address: LiveData<String>
     val recording: LiveData<Boolean>
     var firstTimestamp: Int?

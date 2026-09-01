@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 class DeviceImpl : Device {
     override val address = MutableLiveData<String>()
     override val recording = MutableLiveData<Boolean>()
-
+//    override var maxTimestamps: Int? = null//autorecording stop
     //  This actually stores the timestamp
     override var firstTimestamp: Int? = null
 
